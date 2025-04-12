@@ -1,0 +1,42 @@
+package pers.zymir.parking.billing.domain.model.aggregate;
+
+import lombok.Getter;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
+public class ParkingAggregate {
+
+    // 车牌号
+    private String plate;
+
+    // 入场时间
+    private LocalDateTime entryTime;
+
+    // 出场时间
+    private LocalDateTime departureTime;
+
+    // 最后一次支付时间
+    @Getter
+    private LocalDateTime lastPaidTime;
+
+    // 已支付费用总额
+    @Getter
+    private Integer paidAmount;
+
+    public boolean currentInPark() {
+        return entryTime != null;
+    }
+
+    public void entryPark() {
+        this.entryTime = LocalDateTime.now();
+    }
+
+    public Integer getParkingSeconds(LocalDateTime departureTime) {
+        return Math.toIntExact(ChronoUnit.SECONDS.between(this.entryTime, departureTime));
+    }
+
+    public boolean hasPaid() {
+        return lastPaidTime != null;
+    }
+}
