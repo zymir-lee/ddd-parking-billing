@@ -13,6 +13,7 @@
         <module>parking-billing-domain</module>
         <module>parking-billing-infra</module>
         <module>parking-billing-bootstrap</module>
+        <module>parking-billing-app</module>
     </modules>
 
     <properties>
@@ -49,6 +50,12 @@
             <dependency>
                 <groupId>pers.zymir</groupId>
                 <artifactId>parking-billing-infra</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>pers.zymir</groupId>
+                <artifactId>parking-billing-app</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
