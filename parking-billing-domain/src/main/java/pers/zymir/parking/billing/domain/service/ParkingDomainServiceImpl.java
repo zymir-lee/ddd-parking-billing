@@ -57,7 +57,7 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
             throw new RuntimeException(String.format("车牌号 [%s] 未在场", plate));
         }
 
-        return 0;
+        return calcParkingFeeNow(parkingAggregate, calcParkingFeeCommand.getDepartureTime());
     }
 
     /**
