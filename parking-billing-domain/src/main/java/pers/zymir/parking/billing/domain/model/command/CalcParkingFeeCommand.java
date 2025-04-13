@@ -9,5 +9,5 @@ import java.time.LocalDateTime;
 @Builder
 public class CalcParkingFeeCommand {
     private String plate;
-    private LocalDateTime departureTime;
+    private LocalDateTime leaveTime;
 }

@@ -5,8 +5,8 @@ import org.springframework.stereotype.Component;
 import pers.zymir.parking.billing.domain.adapter.repository.ParkingRepository;
 import pers.zymir.parking.billing.domain.model.aggregate.ParkingAggregate;
 import pers.zymir.parking.billing.domain.model.command.CalcParkingFeeCommand;
-import pers.zymir.parking.billing.domain.model.command.DepartureParkCommand;
 import pers.zymir.parking.billing.domain.model.command.EnterParkCommand;
+import pers.zymir.parking.billing.domain.model.command.LeaveParkCommand;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -35,8 +35,8 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
     }
 
     @Override
-    public Boolean departurePark(DepartureParkCommand departureParkCommand) {
-        String plate = departureParkCommand.getPlate();
+    public Boolean leavePark(LeaveParkCommand leaveParkCommand) {
+        String plate = leaveParkCommand.getPlate();
         ParkingAggregate parkingAggregate = parkingRepository.findById(plate);
 
         if (!parkingAggregate.currentInPark()) {
@@ -45,7 +45,7 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
 
         // 这里用判断方法签名用：“是否可出场” 还是 计算费用然后进行比较呢？
         //  当前的实现方式提取了领域服务，优先将业务规则放在领域服务内 而不是聚合内部 使得代码能够反应业务
-        Integer parkingFeeNow = this.calcParkingFeeNow(parkingAggregate, departureParkCommand.getDepartureParkTime());
+        Integer parkingFeeNow = this.calcParkingFeeNow(parkingAggregate, leaveParkCommand.getLeaveTime());
         return parkingFeeNow <= 0;
     }
 
@@ -57,7 +57,7 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
             throw new RuntimeException(String.format("车牌号 [%s] 未在场", plate));
         }
 
-        return calcParkingFeeNow(parkingAggregate, calcParkingFeeCommand.getDepartureTime());
+        return calcParkingFeeNow(parkingAggregate, calcParkingFeeCommand.getLeaveTime());
     }
 
     /**
@@ -67,19 +67,19 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
      * 如果放到聚合当中 “不足1h按照1h算” 这个业务规则，就在当前方法中体现不出来了
      *
      * @param parkingAggregate 当前停车聚合
-     * @param departureTime    离场时间
+     * @param leaveTime        离场时间
      * @return 金额 单位分
      */
-    private Integer calcParkingFeeNow(ParkingAggregate parkingAggregate, LocalDateTime departureTime) {
+    private Integer calcParkingFeeNow(ParkingAggregate parkingAggregate, LocalDateTime leaveTime) {
         boolean hasPaid = parkingAggregate.hasPaid();
 
-        int shouldPaidAmount = parkingHours(parkingAggregate, departureTime) * PARK_FEE_PER_HOUR;
+        int shouldPaidAmount = parkingHours(parkingAggregate, leaveTime) * PARK_FEE_PER_HOUR;
         if (!hasPaid) {
             return shouldPaidAmount;
         }
 
         //  15分钟之内免费 （假定每次支付都是足额缴纳）
-        long lastPaidMinutes = ChronoUnit.MINUTES.between(parkingAggregate.getLastPaidTime(), departureTime);
+        long lastPaidMinutes = ChronoUnit.MINUTES.between(parkingAggregate.getLastPaidTime(), leaveTime);
         if (lastPaidMinutes <= 15) {
             return 0;
         }
@@ -87,8 +87,8 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
         return shouldPaidAmount - parkingAggregate.getPaidAmount();
     }
 
-    private int parkingHours(ParkingAggregate parkingAggregate, LocalDateTime departureTime) {
-        Integer parkingSeconds = parkingAggregate.getParkingSeconds(departureTime);
+    private int parkingHours(ParkingAggregate parkingAggregate, LocalDateTime leaveTime) {
+        Integer parkingSeconds = parkingAggregate.getParkingSeconds(leaveTime);
         int hours = parkingSeconds / ONE_HOUR_SECOND;
 
         // 不足1h按照1h算

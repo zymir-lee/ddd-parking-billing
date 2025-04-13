@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @Builder
 @Getter
-public class DepartureParkCommand {
+public class LeaveParkCommand {
     private String plate;
-    private LocalDateTime departureParkTime;
+    private LocalDateTime leaveTime;
 }

@@ -14,7 +14,7 @@ public class ParkingAggregate {
     private LocalDateTime enterTime;
 
     // 出场时间
-    private LocalDateTime departureTime;
+    private LocalDateTime leaveTime;
 
     // 最后一次支付时间
     @Getter
@@ -32,8 +32,8 @@ public class ParkingAggregate {
         this.enterTime = LocalDateTime.now();
     }
 
-    public Integer getParkingSeconds(LocalDateTime departureTime) {
-        return Math.toIntExact(ChronoUnit.SECONDS.between(this.enterTime, departureTime));
+    public Integer getParkingSeconds(LocalDateTime leaveTime) {
+        return Math.toIntExact(ChronoUnit.SECONDS.between(this.enterTime, leaveTime));
     }
 
     public boolean hasPaid() {
