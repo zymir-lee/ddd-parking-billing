@@ -2,6 +2,7 @@ package pers.zymir.parking.billing.domain.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import pers.zymir.parking.billing.domain.adapter.gateway.AlarmGateway;
 import pers.zymir.parking.billing.domain.adapter.gateway.EventPublisher;
 import pers.zymir.parking.billing.domain.adapter.repository.ParkingRepository;
 import pers.zymir.parking.billing.domain.model.aggregate.ParkingAggregate;
@@ -9,9 +10,7 @@ import pers.zymir.parking.billing.domain.model.command.CalcParkingFeeCommand;
 import pers.zymir.parking.billing.domain.model.command.EnterParkCommand;
 import pers.zymir.parking.billing.domain.model.command.LeaveParkCommand;
 import pers.zymir.parking.billing.domain.model.command.NotifyPaidCommand;
-import pers.zymir.parking.billing.domain.model.event.EnterParkFailedEvent;
-import pers.zymir.parking.billing.domain.model.event.EnteredParkEvent;
-import pers.zymir.parking.billing.domain.model.event.PaidEvent;
+import pers.zymir.parking.billing.domain.model.event.*;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -26,6 +25,7 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
 
     private final ParkingRepository parkingRepository;
     private final EventPublisher eventPublisher;
+    private final AlarmGateway alarmGateway;
 
     @Override
     public void enterPark(EnterParkCommand enterParkCommand) {
@@ -48,13 +48,19 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
         ParkingAggregate parkingAggregate = parkingRepository.findById(plate);
 
         if (!parkingAggregate.currentInPark()) {
+            eventPublisher.publish(new LeaveParkFailedEvent(plate));
             throw new RuntimeException(String.format("车牌号 [%s] 未在场，不得出场", plate));
         }
 
         // 这里用判断方法签名用：“是否可出场” 还是 计算费用然后进行比较呢？
         //  当前的实现方式提取了领域服务，优先将业务规则放在领域服务内 而不是聚合内部 使得代码能够反应业务
         Integer parkingFeeNow = this.calcParkingFeeNow(parkingAggregate, leaveParkCommand.getLeaveTime());
-        return parkingFeeNow <= 0;
+        if (parkingFeeNow > 0) {
+            return false;
+        }
+
+        eventPublisher.publish(LeaveParkEvent.of(plate));
+        return true;
     }
 
     @Override
@@ -80,6 +86,17 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
         parkingRepository.save(parkingAggregate);
         eventPublisher.publish(new PaidEvent(plate, notifyPaidCommand.getPaidTime(), notifyPaidCommand.getPaidAmount()));
     }
+
+    @Override
+    public void onEnterParkFailed(EnterParkFailedEvent enterParkFailedEvent) {
+        alarmGateway.sendEnterFailedAlarm(enterParkFailedEvent.getPlate());
+    }
+
+    @Override
+    public void onLeaveParkFailed(LeaveParkFailedEvent leaveParkFailedEvent) {
+        alarmGateway.sendLeaveFailedAlarm(leaveParkFailedEvent.getPlate());
+    }
+
 
     /**
      * 基于离场时间计算剩余应缴费用
