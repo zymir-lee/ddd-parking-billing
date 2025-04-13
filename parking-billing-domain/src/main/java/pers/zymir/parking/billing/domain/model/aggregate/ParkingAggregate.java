@@ -39,4 +39,12 @@ public class ParkingAggregate {
     public boolean hasPaid() {
         return lastPaidTime != null;
     }
+
+    public void pay(Integer paidAmount, LocalDateTime paidTime) {
+        this.lastPaidTime = paidTime;
+        if (paidAmount == null) {
+            this.paidAmount = 0;
+        }
+        this.paidAmount += paidAmount;
+    }
 }

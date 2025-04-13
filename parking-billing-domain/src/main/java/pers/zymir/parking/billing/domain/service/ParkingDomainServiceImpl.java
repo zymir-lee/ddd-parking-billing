@@ -8,8 +8,10 @@ import pers.zymir.parking.billing.domain.model.aggregate.ParkingAggregate;
 import pers.zymir.parking.billing.domain.model.command.CalcParkingFeeCommand;
 import pers.zymir.parking.billing.domain.model.command.EnterParkCommand;
 import pers.zymir.parking.billing.domain.model.command.LeaveParkCommand;
+import pers.zymir.parking.billing.domain.model.command.NotifyPaidCommand;
 import pers.zymir.parking.billing.domain.model.event.EnterParkFailedEvent;
 import pers.zymir.parking.billing.domain.model.event.EnteredParkEvent;
+import pers.zymir.parking.billing.domain.model.event.PaidEvent;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -31,13 +33,13 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
         ParkingAggregate parkingAggregate = parkingRepository.findById(plate);
 
         if (parkingAggregate.currentInPark()) {
-            eventPublisher.publish(new EnterParkFailedEvent(this, plate));
+            eventPublisher.publish(new EnterParkFailedEvent(plate));
             throw new RuntimeException(String.format("车牌号 [%s] 已在场，不得重复入场", plate));
         }
 
         parkingAggregate.enterPark();
         parkingRepository.save(parkingAggregate);
-        eventPublisher.publish(new EnteredParkEvent(this, plate));
+        eventPublisher.publish(new EnteredParkEvent(plate));
     }
 
     @Override
@@ -64,6 +66,19 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
         }
 
         return calcParkingFeeNow(parkingAggregate, calcParkingFeeCommand.getLeaveTime());
+    }
+
+    @Override
+    public void notifyPaid(NotifyPaidCommand notifyPaidCommand) {
+        String plate = notifyPaidCommand.getPlate();
+        ParkingAggregate parkingAggregate = parkingRepository.findById(plate);
+        if (!parkingAggregate.currentInPark()) {
+            throw new RuntimeException(String.format("车牌号 [%s] 未在场，不能进行支付", plate));
+        }
+
+        parkingAggregate.pay(notifyPaidCommand.getPaidAmount(), notifyPaidCommand.getPaidTime());
+        parkingRepository.save(parkingAggregate);
+        eventPublisher.publish(new PaidEvent(plate, notifyPaidCommand.getPaidTime(), notifyPaidCommand.getPaidAmount()));
     }
 
     /**
