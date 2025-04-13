@@ -5,6 +5,6 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class EntryParkCommand {
+public class EnterParkCommand {
     private String plate;
 }

@@ -11,7 +11,7 @@ public class ParkingAggregate {
     private String plate;
 
     // 入场时间
-    private LocalDateTime entryTime;
+    private LocalDateTime enterTime;
 
     // 出场时间
     private LocalDateTime departureTime;
@@ -25,15 +25,15 @@ public class ParkingAggregate {
     private Integer paidAmount;
 
     public boolean currentInPark() {
-        return entryTime != null;
+        return enterTime != null;
     }
 
-    public void entryPark() {
-        this.entryTime = LocalDateTime.now();
+    public void enterPark() {
+        this.enterTime = LocalDateTime.now();
     }
 
     public Integer getParkingSeconds(LocalDateTime departureTime) {
-        return Math.toIntExact(ChronoUnit.SECONDS.between(this.entryTime, departureTime));
+        return Math.toIntExact(ChronoUnit.SECONDS.between(this.enterTime, departureTime));
     }
 
     public boolean hasPaid() {

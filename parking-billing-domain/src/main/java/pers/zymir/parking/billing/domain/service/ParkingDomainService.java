@@ -2,11 +2,11 @@ package pers.zymir.parking.billing.domain.service;
 
 import pers.zymir.parking.billing.domain.model.command.CalcParkingFeeCommand;
 import pers.zymir.parking.billing.domain.model.command.DepartureParkCommand;
-import pers.zymir.parking.billing.domain.model.command.EntryParkCommand;
+import pers.zymir.parking.billing.domain.model.command.EnterParkCommand;
 
 public interface ParkingDomainService {
 
-    void entryPark(EntryParkCommand entryParkCommand);
+    void enterPark(EnterParkCommand enterParkCommand);
 
     Boolean departurePark(DepartureParkCommand departureParkCommand);
 

@@ -6,7 +6,7 @@ import pers.zymir.parking.billing.domain.adapter.repository.ParkingRepository;
 import pers.zymir.parking.billing.domain.model.aggregate.ParkingAggregate;
 import pers.zymir.parking.billing.domain.model.command.CalcParkingFeeCommand;
 import pers.zymir.parking.billing.domain.model.command.DepartureParkCommand;
-import pers.zymir.parking.billing.domain.model.command.EntryParkCommand;
+import pers.zymir.parking.billing.domain.model.command.EnterParkCommand;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -22,15 +22,15 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
     private final ParkingRepository parkingRepository;
 
     @Override
-    public void entryPark(EntryParkCommand entryParkCommand) {
-        String plate = entryParkCommand.getPlate();
+    public void enterPark(EnterParkCommand enterParkCommand) {
+        String plate = enterParkCommand.getPlate();
         ParkingAggregate parkingAggregate = parkingRepository.findById(plate);
 
         if (parkingAggregate.currentInPark()) {
             throw new RuntimeException(String.format("车牌号 [%s] 已在场，不得重复入场", plate));
         }
 
-        parkingAggregate.entryPark();
+        parkingAggregate.enterPark();
         parkingRepository.save(parkingAggregate);
     }
 
