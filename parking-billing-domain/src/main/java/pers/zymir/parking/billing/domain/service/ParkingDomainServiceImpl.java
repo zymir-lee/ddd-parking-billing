@@ -2,11 +2,14 @@ package pers.zymir.parking.billing.domain.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import pers.zymir.parking.billing.domain.adapter.gateway.EventPublisher;
 import pers.zymir.parking.billing.domain.adapter.repository.ParkingRepository;
 import pers.zymir.parking.billing.domain.model.aggregate.ParkingAggregate;
 import pers.zymir.parking.billing.domain.model.command.CalcParkingFeeCommand;
 import pers.zymir.parking.billing.domain.model.command.EnterParkCommand;
 import pers.zymir.parking.billing.domain.model.command.LeaveParkCommand;
+import pers.zymir.parking.billing.domain.model.event.EnterParkFailedEvent;
+import pers.zymir.parking.billing.domain.model.event.EnteredParkEvent;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -20,6 +23,7 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
     private static final Integer ONE_HOUR_SECOND = Math.toIntExact(TimeUnit.HOURS.toSeconds(1));
 
     private final ParkingRepository parkingRepository;
+    private final EventPublisher eventPublisher;
 
     @Override
     public void enterPark(EnterParkCommand enterParkCommand) {
@@ -27,11 +31,13 @@ public class ParkingDomainServiceImpl implements ParkingDomainService {
         ParkingAggregate parkingAggregate = parkingRepository.findById(plate);
 
         if (parkingAggregate.currentInPark()) {
+            eventPublisher.publish(new EnterParkFailedEvent(this, plate));
             throw new RuntimeException(String.format("车牌号 [%s] 已在场，不得重复入场", plate));
         }
 
         parkingAggregate.enterPark();
         parkingRepository.save(parkingAggregate);
+        eventPublisher.publish(new EnteredParkEvent(this, plate));
     }
 
     @Override
